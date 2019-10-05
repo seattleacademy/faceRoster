@@ -47,7 +47,7 @@
 
     async function updateResults() {
         if (tiny) {
-            results = await faceapi.detectAllFaces("myImg", new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true).withFaceExpressions();
+            results = await faceapi.detectAllFaces("myImg", new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender();
         } else {
             results = await faceapi.detectAllFaces("myImg").withFaceLandmarks().withFaceExpressions().withAgeAndGender();
         }
