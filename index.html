@@ -8,10 +8,22 @@
 </head>
 
 <body>
-    <img id="myImg" src="bbt1.jpg" alt="">
+    <div id="imagediv">
+        <img id="myImg" src="bbt1.jpg" alt="">
+    </div>
     <script>
     const tiny = false;
     console.time();
+
+    function drawFaceRecognitionResults(results) {
+        results.forEach(function(detection) {
+            let btn = document.createElement("button");
+            btn.innerText = detection.classScore.toFixed(2);
+            btn.style = 'position:absolute; top:' + detection.box.top + 'px;left:' + detection.box.left + 'px; zindex:2';
+            document.getElementById("imagediv").appendChild(btn);
+        })
+    }
+
     async function loadModels() {
         if (tiny) {
             await faceapi.nets.tinyFaceDetector.load("weights");
@@ -27,7 +39,9 @@
         } else {
             results = await faceapi.detectAllFaces(document.getElementById("myImg"));
         }
-        console.log(results);
+
+        drawFaceRecognitionResults(results);
+
         console.timeEnd();
     }
 
