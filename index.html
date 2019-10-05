@@ -21,10 +21,10 @@
         while (paras[0]) {
             paras[0].parentNode.removeChild(paras[0]);
         }
-        results.forEach(function(detection) {
+        results.forEach(function(result) {
             let btn = document.createElement("button");
-            btn.innerText = detection.classScore.toFixed(2);
-            btn.style = 'position:absolute; top:' + detection.box.top + 'px;left:' + detection.box.left + 'px; zindex:2';
+            btn.innerText = result.detection.classScore.toFixed(2) + ';' + result.landmarks.imageWidth + ' x ' + result.landmarks.imageHeight;
+            btn.style = 'position:absolute; top:' + result.detection.box.top + 'px;left:' + result.detection.box.left + 'px; zindex:2';
             btn.className = 'faceNames';
             document.getElementById("imagediv").appendChild(btn);
         })
@@ -33,17 +33,19 @@
     async function loadModels() {
         if (tiny) {
             await faceapi.nets.tinyFaceDetector.load("weights");
+            await faceapi.nets.faceLandmark68TinyNet.load("weights");
         } else {
             await faceapi.nets.ssdMobilenetv1.load("weights");
+            await faceapi.nets.faceLandmark68Net.load("weights");
         }
         console.timeLog();
     }
 
     async function updateResults() {
         if (tiny) {
-            results = await faceapi.detectAllFaces(document.getElementById("myImg"), new faceapi.TinyFaceDetectorOptions());
+            results = await faceapi.detectAllFaces("myImg", new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
         } else {
-            results = await faceapi.detectAllFaces(document.getElementById("myImg"));
+            results = await faceapi.detectAllFaces("myImg").withFaceLandmarks();
         }
 
         drawFaceRecognitionResults(results);
