@@ -8,14 +8,19 @@
 </head>
 
 <body>
-    <img src="bbt1.jpg" alt="">
+    <img id = "myImg" src="bbt1.jpg" alt="">
     <script>
     console.dir(faceapi);
     async function loadModels() {
         await faceapi.nets.tinyFaceDetector.load("weights");
     }
 
-    loadModels().then(console.log('models loaded'))
+    async function updateResults(){
+    	results = await faceapi.detectAllFaces(document.getElementById("myImg"),new faceapi.TinyFaceDetectorOptions());
+    	console.log(results);
+    }
+
+    loadModels().then(updateResults)
     </script>
 </body>
 
