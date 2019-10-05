@@ -8,18 +8,27 @@
 </head>
 
 <body>
-    <img id = "myImg" src="bbt1.jpg" alt="">
+    <img id="myImg" src="bbt1.jpg" alt="">
     <script>
-    console.dir(faceapi);
+    const tiny = false;
+    console.time();
     async function loadModels() {
-       // await faceapi.nets.tinyFaceDetector.load("weights");
-        await faceapi.nets.ssdMobilenetv1.load("/weights");
+        if (tiny) {
+            await faceapi.nets.tinyFaceDetector.load("weights");
+        } else {
+            await faceapi.nets.ssdMobilenetv1.load("weights");
+        }
+        console.timeLog();
     }
 
-    async function updateResults(){
-    	//results = await faceapi.detectAllFaces(document.getElementById("myImg"),new faceapi.TinyFaceDetectorOptions());
-    	results = await faceapi.detectAllFaces(document.getElementById("myImg"));
-    	console.log(results);
+    async function updateResults() {
+        if (tiny) {
+            results = await faceapi.detectAllFaces(document.getElementById("myImg"), new faceapi.TinyFaceDetectorOptions());
+        } else {
+            results = await faceapi.detectAllFaces(document.getElementById("myImg"));
+        }
+        console.log(results);
+        console.timeEnd();
     }
 
     loadModels().then(updateResults)
