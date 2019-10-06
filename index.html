@@ -2,9 +2,9 @@
 <html lang="en">
 
 <head>
-	<script>
-    // Needed if webcam is used
-    if (location.protocol !== "https:") {
+    <script>
+        // Needed if webcam is used
+    if (location.protocol == "http:") {
     location.protocol = "https:";
     }
 </script>
@@ -15,7 +15,9 @@
 
 <body>
     <label>Upload Image:</label> <input id="queryImgUploadInput" type="file" onchange="uploadQueryImage(event)" accept=".jpg, .jpeg, .png">
+    <label>Webcam:</label><input id="webCamToggle" type="checkbox">
     <label>maxDiff:</label> <select id="maxDiff" name="maxDiff">
+        <option value=".05">.05</option>
         <option value=".1">.1</option>
         <option value=".2">.2</option>
         <option value=".3">.3</option>
@@ -25,8 +27,10 @@
         <option value=".7">.7</option>
         <option value=".8">.8</option>
         <option value=".9">.9</option>
+        <option value=".95">.95</option>
     </select>
     <label>threshold:</label> <select id="threshold" name="threshold">
+        <option value=".05">.05</option>
         <option value=".1">.1</option>
         <option value=".2">.2</option>
         <option selected value=".3">.3</option>
@@ -36,14 +40,17 @@
         <option value=".7">.7</option>
         <option value=".8">.8</option>
         <option value=".9">.9</option>
+        <option value=".98">.98</option>
     </select>
     <div id="imagediv">
         <img id="myImg" src="bbt1.jpg" alt="">
+        <video id="webCam"></video>
     </div>
     <script>
     let tiny = false;
     let maxDiff = .6;
     let threshold = .3;
+    let srcId = "myImg";
     var personDescriptors = [];
     var faceMatcher;
     console.time();
@@ -124,8 +131,8 @@
     }
 
     async function loadModels() {
-    	//let weightsURI = "weights";
-    	let weightsURI = "https://seattleacademy.github.io/faceRoster/weights";
+        //let weightsURI = "weights";
+        let weightsURI = "https://seattleacademy.github.io/faceRoster/weights";
         if (tiny) {
             await faceapi.nets.tinyFaceDetector.load(weightsURI);
             await faceapi.nets.faceLandmark68TinyNet.load(weightsURI);
@@ -141,12 +148,13 @@
     }
 
     async function updateResults() {
+
         if (tiny) {
             let options = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: Number(threshold), inputSize: 512 })
-            results = await faceapi.detectAllFaces("myImg", options).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender().withFaceDescriptors();
+            results = await faceapi.detectAllFaces(srcId, options).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         } else {
             let options = new faceapi.SsdMobilenetv1Options({ minConfidence: Number(threshold) })
-            results = await faceapi.detectAllFaces("myImg", options).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors();
+            results = await faceapi.detectAllFaces(srcId, options).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         }
 
         if (results.length > 0) {
@@ -161,17 +169,56 @@
         };
 
         drawFaceRecognitionResults(results);
+        if (document.getElementById('webCamToggle').checked) {
+            setTimeout(function() {
+                // console.timeEnd('webcam');
+                // console.time('webcam');
+                updateResults()
+            }, 100);
+        } else {
+            console.timeEnd();
+        }
 
-        console.timeEnd();
     }
 
     async function uploadQueryImage(e) {
         console.time();
+        toggleWebCam(false);
         const imgFile = e.target.files[0]
         const img = await faceapi.bufferToImage(imgFile)
         document.getElementById("myImg").src = img.src
         updateResults()
     }
+
+    function toggleWebCam(enable) {
+        webCam = document.getElementById('webCam');
+        let constraints = true; //Use defaults
+        if (enable) {
+            navigator.mediaDevices.getUserMedia({ video: constraints }).then(function(stream) {
+                srcId = "webCam"
+                document.getElementById("myImg").style.display = "none";
+                document.getElementById("webCam").style.display = "block";
+                webCam.srcObject = stream;
+                webCam.play().then(updateResults);
+            });
+        } else {
+            if (webCam.srcObject) {
+                webCam.srcObject.getTracks().forEach(function(track) {
+                    track.stop();
+                });
+            }
+            webCam.src = "";
+            srcId = "myImg";
+            document.getElementById("webCam").style.display = "none";
+            document.getElementById("myImg").style.display = "block";
+            console.time();
+            updateResults();
+        }
+    }
+    document.getElementById('webCamToggle').addEventListener('change', function(event) {
+        console.time();
+        toggleWebCam(event.target.checked);
+    }, false);
     document.getElementById('maxDiff').addEventListener('change', function(event) {
         console.time();
         maxDiff = event.target.value;
