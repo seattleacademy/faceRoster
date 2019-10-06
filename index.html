@@ -42,6 +42,7 @@
         <option value=".9">.9</option>
         <option value=".98">.98</option>
     </select>
+    Status: <span id="status"></span>
     <div id="imagediv">
         <img id="myImg" src="bbt1.jpg" alt="">
         <video id="webCam"></video>
@@ -53,7 +54,6 @@
     let srcId = "myImg";
     var personDescriptors = [];
     var faceMatcher;
-    console.time();
 
     function drawFaceRecognitionResults(results) {
         let paras = document.getElementsByClassName('faceNames');
@@ -117,7 +117,6 @@
     function personClick(e) {
         var newPerson = prompt("Please enter person's name:", e.target.dataset.person);
         if (newPerson == null || newPerson == "" || newPerson == "unknown") {} else {
-            console.time();
             e.target.dataset.person = newPerson;
             e.target.innerHTML = newPerson;
             let descriptor = {};
@@ -131,6 +130,7 @@
     }
 
     async function loadModels() {
+        updateStatus('loading models');
         //let weightsURI = "weights";
         let weightsURI = "https://seattleacademy.github.io/faceRoster/weights";
         if (tiny) {
@@ -140,14 +140,21 @@
             await faceapi.nets.ssdMobilenetv1.load(weightsURI);
             await faceapi.nets.faceLandmark68Net.load(weightsURI);
         }
+        updateStatus('faceExpressionNet');
         await faceapi.nets.faceExpressionNet.load(weightsURI);
-        await faceapi.nets.ageGenderNet.load(weightsURI);
-        await faceapi.nets.faceRecognitionNet.loadFromUri(weightsURI)
+        updateStatus('ageGenderNet');
 
-        console.timeLog();
+        await faceapi.nets.ageGenderNet.load(weightsURI);
+        updateStatus('faceRecognitionNet');
+
+        await faceapi.nets.faceRecognitionNet.loadFromUri(weightsURI)
+        updateStatus('models loaded');
+
+
     }
 
     async function updateResults() {
+        updateStatus('detectAllFaces');
 
         if (tiny) {
             let options = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: Number(threshold), inputSize: 512 })
@@ -156,6 +163,8 @@
             let options = new faceapi.SsdMobilenetv1Options({ minConfidence: Number(threshold) })
             results = await faceapi.detectAllFaces(srcId, options).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         }
+        updateStatus('finding best matches');
+
 
         if (results.length > 0) {
 
@@ -167,22 +176,14 @@
                 }
             })
         };
-
         drawFaceRecognitionResults(results);
+        updateStatus('');
         if (document.getElementById('webCamToggle').checked) {
-            setTimeout(function() {
-                // console.timeEnd('webcam');
-                // console.time('webcam');
-                updateResults()
-            }, 100);
-        } else {
-            console.timeEnd();
+            setTimeout(updateResults, 100);
         }
-
     }
 
     async function uploadQueryImage(e) {
-        console.time();
         toggleWebCam(false);
         const imgFile = e.target.files[0]
         const img = await faceapi.bufferToImage(imgFile)
@@ -211,21 +212,22 @@
             srcId = "myImg";
             document.getElementById("webCam").style.display = "none";
             document.getElementById("myImg").style.display = "block";
-            console.time();
             updateResults();
         }
+        document.getElementById('webCamToggle').checked = enable;
+    }
+
+    function updateStatus(str) {
+        document.getElementById("status").innerHTML = str;
     }
     document.getElementById('webCamToggle').addEventListener('change', function(event) {
-        console.time();
         toggleWebCam(event.target.checked);
     }, false);
     document.getElementById('maxDiff').addEventListener('change', function(event) {
-        console.time();
         maxDiff = event.target.value;
         createFaceMatcher().then(updateResults);
     }, false);
     document.getElementById('threshold').addEventListener('change', function(event) {
-        console.time();
         threshold = event.target.value;
         createFaceMatcher().then(updateResults);
     }, false);
