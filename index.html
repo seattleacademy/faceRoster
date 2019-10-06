@@ -2,6 +2,12 @@
 <html lang="en">
 
 <head>
+	<script>
+    // Needed if webcam is used
+    if (location.protocol !== "https:") {
+    location.protocol = "https:";
+    }
+</script>
     <meta charset="UTF-8">
     <title>faceRoster</title>
     <script src="js/face-api.js"></script>
@@ -16,7 +22,7 @@
         <option value=".4">.4</option>
         <option value=".5">.5</option>
         <option selected value=".6">.6</option>
-        <option  value=".7">.7</option>
+        <option value=".7">.7</option>
         <option value=".8">.8</option>
         <option value=".9">.9</option>
     </select>
@@ -67,6 +73,7 @@
         if (personDescriptors.length == 0) {
             return faceMatcher;
         }
+
         personDescriptors.sort();
         labeledFaceDescriptors = [];
         let descriptors = []
@@ -117,23 +124,25 @@
     }
 
     async function loadModels() {
+    	//let weightsURI = "weights";
+    	let weightsURI = "https://seattleacademy.github.io/faceRoster/weights";
         if (tiny) {
-            await faceapi.nets.tinyFaceDetector.load("weights");
-            await faceapi.nets.faceLandmark68TinyNet.load("weights");
+            await faceapi.nets.tinyFaceDetector.load(weightsURI);
+            await faceapi.nets.faceLandmark68TinyNet.load(weightsURI);
         } else {
-            await faceapi.nets.ssdMobilenetv1.load("weights");
-            await faceapi.nets.faceLandmark68Net.load("weights");
+            await faceapi.nets.ssdMobilenetv1.load(weightsURI);
+            await faceapi.nets.faceLandmark68Net.load(weightsURI);
         }
-        await faceapi.nets.faceExpressionNet.load("weights");
-        await faceapi.nets.ageGenderNet.load("weights");
-        await faceapi.nets.faceRecognitionNet.loadFromUri('weights')
+        await faceapi.nets.faceExpressionNet.load(weightsURI);
+        await faceapi.nets.ageGenderNet.load(weightsURI);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(weightsURI)
 
         console.timeLog();
     }
 
     async function updateResults() {
         if (tiny) {
-            let options = new faceapi.SsdMobilenetv1Options({ scoreThreashold: threshold })
+            let options = new faceapi.TinyFaceDetectorOptions({ scoreThreshold: Number(threshold), inputSize: 512 })
             results = await faceapi.detectAllFaces("myImg", options).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         } else {
             let options = new faceapi.SsdMobilenetv1Options({ minConfidence: Number(threshold) })
