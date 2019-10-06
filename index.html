@@ -14,10 +14,10 @@
     </div>
     <script>
     const tiny = false;
+    var faceMatcher;
     console.time();
 
     function drawFaceRecognitionResults(results) {
-    	console.log(results)
         let paras = document.getElementsByClassName('faceNames');
         while (paras[0]) {
             paras[0].parentNode.removeChild(paras[0]);
@@ -41,24 +41,38 @@
         }
         await faceapi.nets.faceExpressionNet.load("weights");
         await faceapi.nets.ageGenderNet.load("weights");
+        await faceapi.nets.faceRecognitionNet.loadFromUri('weights')
 
         console.timeLog();
     }
 
     async function updateResults() {
         if (tiny) {
-            results = await faceapi.detectAllFaces("myImg", new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender();
+            results = await faceapi.detectAllFaces("myImg", new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         } else {
-            results = await faceapi.detectAllFaces("myImg").withFaceLandmarks().withFaceExpressions().withAgeAndGender();
+            results = await faceapi.detectAllFaces("myImg").withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         }
+
+        if (!results.length) {
+            drawFaceRecognitionResults(results);
+            return
+        }
+
+        // create FaceMatcher with automatically assigned labels
+        // from the detection results for the reference image
+        faceMatcher = await new faceapi.FaceMatcher(results);
 
         drawFaceRecognitionResults(results);
 
+        results.forEach(function(result, i, results) {
+            results[i].bestMatch = faceMatcher.findBestMatch(result.descriptor)
+        })
+        console.log(results)
         console.timeEnd();
     }
 
     async function uploadQueryImage(e) {
-    	console.time();
+        console.time();
         const imgFile = e.target.files[0]
         const img = await faceapi.bufferToImage(imgFile)
         document.getElementById("myImg").src = img.src
