@@ -44,8 +44,8 @@
     </select>
     Status: <span id="status"></span>
     <div id="imagediv">
-        <img id="myImg" src="bbt1.jpg" alt="">
-        <video id="webCam"></video>
+        <img id="myImg" src="bbt1.jpg" alt="" style="max-width: 800px;">
+        <video id="webCam" width="1280" height="960"></video>
     </div>
     <script>
     let tiny = false;
@@ -64,6 +64,9 @@
 
     function drawFaceRecognitionResults(results) {
         clearFaceNames()
+        inputImgEl = document.getElementById(srcId);
+        results = faceapi.resizeResults(results, inputImgEl);
+
         results.forEach(function(result) {
             let btn = document.createElement("button");
             if (result.bestMatch.label != 'unknown') {
@@ -201,6 +204,11 @@
         let constraints = true; //Use defaults
         if (enable) {
             navigator.mediaDevices.getUserMedia({ video: constraints }).then(function(stream) {
+                let {width, height} = stream.getTracks()[0].getSettings();
+
+                document.getElementById("webCam").width = width;
+                document.getElementById("webCam").height = height;
+
                 srcId = "webCam"
                 document.getElementById("queryImgUploadInput").value = "";
                 document.getElementById("myImg").style.display = "none";
