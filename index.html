@@ -55,11 +55,15 @@
     var personDescriptors = [];
     var faceMatcher;
 
-    function drawFaceRecognitionResults(results) {
+    function clearFaceNames() {
         let paras = document.getElementsByClassName('faceNames');
         while (paras[0]) {
             paras[0].parentNode.removeChild(paras[0]);
         }
+    }
+
+    function drawFaceRecognitionResults(results) {
+        clearFaceNames()
         results.forEach(function(result) {
             let btn = document.createElement("button");
             if (result.bestMatch.label != 'unknown') {
@@ -192,11 +196,13 @@
     }
 
     function toggleWebCam(enable) {
+        clearFaceNames()
         webCam = document.getElementById('webCam');
         let constraints = true; //Use defaults
         if (enable) {
             navigator.mediaDevices.getUserMedia({ video: constraints }).then(function(stream) {
                 srcId = "webCam"
+                document.getElementById("queryImgUploadInput").value = "";
                 document.getElementById("myImg").style.display = "none";
                 document.getElementById("webCam").style.display = "block";
                 webCam.srcObject = stream;
