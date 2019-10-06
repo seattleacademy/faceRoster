@@ -9,11 +9,35 @@
 
 <body>
     <label>Upload Image:</label> <input id="queryImgUploadInput" type="file" onchange="uploadQueryImage(event)" accept=".jpg, .jpeg, .png">
+    <label>maxDiff:</label> <select id="maxDiff" name="maxDiff">
+        <option value=".1">.1</option>
+        <option value=".2">.2</option>
+        <option value=".3">.3</option>
+        <option value=".4">.4</option>
+        <option value=".5">.5</option>
+        <option selected value=".6">.6</option>
+        <option  value=".7">.7</option>
+        <option value=".8">.8</option>
+        <option value=".9">.9</option>
+    </select>
+    <label>threshold:</label> <select id="threshold" name="threshold">
+        <option value=".1">.1</option>
+        <option value=".2">.2</option>
+        <option selected value=".3">.3</option>
+        <option value=".4">.4</option>
+        <option value=".5">.5</option>
+        <option value=".6">.6</option>
+        <option value=".7">.7</option>
+        <option value=".8">.8</option>
+        <option value=".9">.9</option>
+    </select>
     <div id="imagediv">
         <img id="myImg" src="bbt1.jpg" alt="">
     </div>
     <script>
-    const tiny = false;
+    let tiny = false;
+    let maxDiff = .6;
+    let threshold = .3;
     var personDescriptors = [];
     var faceMatcher;
     console.time();
@@ -40,6 +64,9 @@
     }
 
     async function createFaceMatcher() {
+        if (personDescriptors.length == 0) {
+            return faceMatcher;
+        }
         personDescriptors.sort();
         labeledFaceDescriptors = [];
         let descriptors = []
@@ -60,9 +87,8 @@
             labeledFaceDescriptors.push(new faceapi.LabeledFaceDescriptors(currentName, descriptors));
         }
 
-        const maxDescriptorDistance = 0.5
+        const maxDescriptorDistance = maxDiff;
         faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, maxDescriptorDistance)
-
         return faceMatcher;
     }
 
@@ -107,29 +133,26 @@
 
     async function updateResults() {
         if (tiny) {
-            results = await faceapi.detectAllFaces("myImg", new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender().withFaceDescriptors();
+            let options = new faceapi.SsdMobilenetv1Options({ scoreThreashold: threshold })
+            results = await faceapi.detectAllFaces("myImg", options).withFaceLandmarks(true).withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         } else {
-            results = await faceapi.detectAllFaces("myImg").withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors();
+            let options = new faceapi.SsdMobilenetv1Options({ minConfidence: Number(threshold) })
+            results = await faceapi.detectAllFaces("myImg", options).withFaceLandmarks().withFaceExpressions().withAgeAndGender().withFaceDescriptors();
         }
 
-        if (!results.length) {
-            drawFaceRecognitionResults(results);
-            return
-        }
+        if (results.length > 0) {
 
-        // create FaceMatcher with automatically assigned labels
-        // from the detection results for the reference image
-        if (faceMatcher == null) {
-            faceMatcher = await new faceapi.FaceMatcher(results);
-        }
-
-        results.forEach(function(result, i, results) {
-            results[i].bestMatch = faceMatcher.findBestMatch(result.descriptor)
-        })
+            results.forEach(function(result, i, results) {
+                if (faceMatcher == null) {
+                    results[i].bestMatch = new faceapi.FaceMatch('unknown', 1)
+                } else {
+                    results[i].bestMatch = faceMatcher.findBestMatch(result.descriptor)
+                }
+            })
+        };
 
         drawFaceRecognitionResults(results);
 
-        // console.log(results)
         console.timeEnd();
     }
 
@@ -140,7 +163,16 @@
         document.getElementById("myImg").src = img.src
         updateResults()
     }
-
+    document.getElementById('maxDiff').addEventListener('change', function(event) {
+        console.time();
+        maxDiff = event.target.value;
+        createFaceMatcher().then(updateResults);
+    }, false);
+    document.getElementById('threshold').addEventListener('change', function(event) {
+        console.time();
+        threshold = event.target.value;
+        createFaceMatcher().then(updateResults);
+    }, false);
     loadModels().then(updateResults)
     </script>
 </body>
